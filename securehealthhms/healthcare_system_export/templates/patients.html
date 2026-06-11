@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Patients – SecureHealth{% endblock %}
+{% block page_title %}Patient Records{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-heading">Patient Records</h2>
+    <p class="page-subheading">{{ patients|length }} patient(s) found {% if search %}for "{{ search }}"{% endif %}</p>
+  </div>
+  <div class="page-header-actions">
+    {% if session.role in ['admin','doctor'] %}
+    <a href="{{ url_for('new_patient') }}" class="btn-primary-custom">
+      <i class="fa-solid fa-user-plus me-2"></i>Add Patient
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Search Bar -->
+<div class="search-bar-wrapper">
+  <form method="GET" action="{{ url_for('patients') }}" class="search-form">
+    <div class="search-input-wrapper">
+      <i class="fa-solid fa-magnifying-glass search-icon"></i>
+      <input type="text" name="search" value="{{ search }}" class="search-input"
+             placeholder="Search by name or Patient ID...">
+      <button type="submit" class="search-btn">Search</button>
+      {% if search %}
+      <a href="{{ url_for('patients') }}" class="search-clear"><i class="fa-solid fa-xmark"></i></a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+{% if session.role == 'nurse' %}
+<div class="access-notice notice-warning">
+  <i class="fa-solid fa-eye-slash me-2"></i>
+  <strong>Restricted View:</strong> Diagnosis, treatment plans, and address are not accessible for nurse role.
+</div>
+{% endif %}
+
+{% if patients %}
+<div class="content-card">
+  <div class="table-responsive">
+    <table class="data-table" id="patientsTable">
+      <thead>
+        <tr>
+          <th>Patient ID</th>
+          <th>Name</th>
+          <th>Age</th>
+          <th>Gender</th>
+          <th>Blood Group</th>
+          <th>Assigned Doctor</th>
+          <th>Last Visit</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in patients %}
+        <tr>
+          <td><code class="patient-id-code">{{ p.patient_id }}</code></td>
+          <td>
+            <div class="patient-name-cell">
+              <div class="patient-avatar">{{ p.name[0] }}</div>
+              <span>{{ p.name }}</span>
+            </div>
+          </td>
+          <td>{{ p.age }}</td>
+          <td>
+            <span class="gender-badge gender-{{ p.gender|lower }}">{{ p.gender }}</span>
+          </td>
+          <td><span class="blood-badge">{{ p.blood_group }}</span></td>
+          <td><span class="text-muted">{{ p.assigned_doctor or '—' }}</span></td>
+          <td>{{ p.last_visit or '—' }}</td>
+          <td>
+            <div class="action-buttons">
+              <a href="{{ url_for('view_patient', pid=p['id']) }}" class="btn-action btn-view" title="View">
+                <i class="fa-solid fa-eye"></i>
+              </a>
+              {% if session.role in ['admin','doctor'] %}
+              <a href="{{ url_for('edit_patient', pid=p['id']) }}" class="btn-action btn-edit" title="Edit">
+                <i class="fa-solid fa-pen"></i>
+              </a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon"><i class="fa-solid fa-user-slash"></i></div>
+  <h3>No Patients Found</h3>
+  <p>{% if search %}No results for "{{ search }}". Try a different search term.{% else %}No patient records assigned to you yet.{% endif %}</p>
+  {% if session.role in ['admin','doctor'] %}
+  <a href="{{ url_for('new_patient') }}" class="btn-primary-custom">Add First Patient</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

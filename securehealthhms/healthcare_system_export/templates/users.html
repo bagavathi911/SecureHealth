@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Users – SecureHealth{% endblock %}
+{% block page_title %}User Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-heading">User Management</h2>
+    <p class="page-subheading">{{ users|length }} registered user(s) in the system</p>
+  </div>
+  <a href="{{ url_for('new_user') }}" class="btn-primary-custom">
+    <i class="fa-solid fa-user-plus me-2"></i>Add User
+  </a>
+</div>
+
+<!-- Role Summary -->
+<div class="stats-grid">
+  {% set admins = users|selectattr('role','eq','admin')|list %}
+  {% set doctors = users|selectattr('role','eq','doctor')|list %}
+  {% set nurses = users|selectattr('role','eq','nurse')|list %}
+  <div class="stat-card stat-blue">
+    <div class="stat-icon"><i class="fa-solid fa-user-shield"></i></div>
+    <div class="stat-content">
+      <div class="stat-value">{{ admins|length }}</div>
+      <div class="stat-label">Administrators</div>
+    </div>
+  </div>
+  <div class="stat-card stat-teal">
+    <div class="stat-icon"><i class="fa-solid fa-user-doctor"></i></div>
+    <div class="stat-content">
+      <div class="stat-value">{{ doctors|length }}</div>
+      <div class="stat-label">Doctors</div>
+    </div>
+  </div>
+  <div class="stat-card stat-green">
+    <div class="stat-icon"><i class="fa-solid fa-user-nurse"></i></div>
+    <div class="stat-content">
+      <div class="stat-value">{{ nurses|length }}</div>
+      <div class="stat-label">Nurses</div>
+    </div>
+  </div>
+  <div class="stat-card stat-purple">
+    <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+    <div class="stat-content">
+      <div class="stat-value">{{ users|length }}</div>
+      <div class="stat-label">Total Users</div>
+    </div>
+  </div>
+</div>
+
+<div class="content-card">
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Username</th>
+          <th>Role</th>
+          <th>Created</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td class="text-muted">{{ u.id }}</td>
+          <td>
+            <div class="patient-name-cell">
+              <div class="patient-avatar" style="background: {% if u.role == 'admin' %}var(--blue){% elif u.role == 'doctor' %}var(--teal){% else %}var(--green){% endif %}">{{ u.username[0].upper() }}</div>
+              <div>
+                <span class="fw-500">{{ u.username }}</span>
+                {% if u.id == session.user_id %}<span class="badge bg-secondary ms-2">You</span>{% endif %}
+              </div>
+            </div>
+          </td>
+          <td><span class="role-badge role-{{ u.role }}">{{ u.role|capitalize }}</span></td>
+          <td class="text-muted">{{ u.created_at[:10] if u.created_at else '—' }}</td>
+          <td>
+            {% if u.id != session.user_id %}
+            <form method="POST" action="{{ url_for('delete_user', uid=u.id) }}" style="display:inline"
+                  onsubmit="return confirm('Delete user {{ u.username }}? This cannot be undone.')">
+              <button type="submit" class="btn-action btn-delete" title="Delete user">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </form>
+            {% else %}
+            <span class="text-muted" title="Cannot delete your own account"><i class="fa-solid fa-lock"></i></span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

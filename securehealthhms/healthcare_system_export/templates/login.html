@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Login – SecureHealth HMS{% endblock %}
+
+{% block auth_content %}
+<div class="login-page">
+  <div class="login-left">
+    <div class="login-brand">
+      <div class="login-brand-icon"><i class="fa-solid fa-shield-heart"></i></div>
+      <h1 class="login-brand-name">SecureHealth</h1>
+      <p class="login-brand-tagline">Healthcare Management System</p>
+    </div>
+    <div class="login-features">
+      <div class="login-feature">
+        <div class="feature-icon"><i class="fa-solid fa-lock"></i></div>
+        <div>
+          <strong>AES-256 Encryption</strong>
+          <p>All sensitive patient data encrypted at rest</p>
+        </div>
+      </div>
+      <div class="login-feature">
+        <div class="feature-icon"><i class="fa-solid fa-shield-halved"></i></div>
+        <div>
+          <strong>Role-Based Access</strong>
+          <p>Admin, Doctor and Nurse access tiers</p>
+        </div>
+      </div>
+      <div class="login-feature">
+        <div class="feature-icon"><i class="fa-solid fa-file-shield"></i></div>
+        <div>
+          <strong>Full Audit Trail</strong>
+          <p>Every access and action logged with timestamp</p>
+        </div>
+      </div>
+      <div class="login-feature">
+        <div class="feature-icon"><i class="fa-solid fa-user-shield"></i></div>
+        <div>
+          <strong>HIPAA-Inspired</strong>
+          <p>Security practices aligned with HIPAA principles</p>
+        </div>
+      </div>
+    </div>
+    <div class="login-disclaimer">
+      <i class="fa-solid fa-circle-info me-2"></i>
+      <strong>Demo Notice:</strong> This system uses entirely synthetic, fictional patient data for demonstration purposes only.
+    </div>
+  </div>
+
+  <div class="login-right">
+    <div class="login-card">
+      <div class="login-card-header">
+        <h2>Welcome Back</h2>
+        <p>Sign in to access your secure dashboard</p>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'danger' if category == 'error' else category }} mb-3">
+          <i class="fa-solid {% if category == 'success' %}fa-circle-check{% elif category == 'danger' %}fa-circle-xmark{% else %}fa-circle-info{% endif %} me-2"></i>
+          {{ message }}
+        </div>
+        {% endfor %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('login') }}" autocomplete="off" novalidate>
+        <div class="form-group-custom">
+          <label class="form-label-custom">Username</label>
+          <div class="input-icon-wrapper">
+            <i class="fa-solid fa-user input-icon"></i>
+            <input type="text" name="username" class="form-control-custom"
+                   placeholder="Enter your username" required autocomplete="username">
+          </div>
+        </div>
+
+        <div class="form-group-custom">
+          <label class="form-label-custom">Password</label>
+          <div class="input-icon-wrapper">
+            <i class="fa-solid fa-lock input-icon"></i>
+            <input type="password" name="password" id="passwordField"
+                   class="form-control-custom" placeholder="Enter your password"
+                   required autocomplete="current-password">
+            <button type="button" class="password-toggle" onclick="togglePassword()">
+              <i class="fa-solid fa-eye" id="eyeIcon"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-login">
+          <i class="fa-solid fa-right-to-bracket me-2"></i>Sign In Securely
+        </button>
+      </form>
+
+      <div class="login-demo-creds">
+        <div class="demo-creds-title"><i class="fa-solid fa-key me-1"></i>Demo Credentials</div>
+        <div class="demo-creds-grid">
+          <div class="demo-cred" onclick="fillCreds('admin','Admin@1234!')">
+            <span class="role-badge role-admin">Admin</span>
+            <code>admin / Admin@1234!</code>
+          </div>
+          <div class="demo-cred" onclick="fillCreds('dr.mehta','Doctor@1234!')">
+            <span class="role-badge role-doctor">Doctor</span>
+            <code>dr.mehta / Doctor@1234!</code>
+          </div>
+          <div class="demo-cred" onclick="fillCreds('nurse01','Nurse@1234!')">
+            <span class="role-badge role-nurse">Nurse</span>
+            <code>nurse01 / Nurse@1234!</code>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function togglePassword() {
+  const f = document.getElementById('passwordField');
+  const i = document.getElementById('eyeIcon');
+  if (f.type === 'password') { f.type = 'text'; i.className = 'fa-solid fa-eye-slash'; }
+  else { f.type = 'password'; i.className = 'fa-solid fa-eye'; }
+}
+function fillCreds(u, p) {
+  document.querySelector('[name=username]').value = u;
+  document.getElementById('passwordField').value = p;
+}
+</script>
+{% endblock %}

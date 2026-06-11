@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}{{ patient.name }} – SecureHealth{% endblock %}
+{% block page_title %}Patient Record{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <a href="{{ url_for('patients') }}" class="back-link"><i class="fa-solid fa-arrow-left me-2"></i>Back to Patients</a>
+    <h2 class="page-heading mt-1">{{ patient.name }}</h2>
+    <p class="page-subheading">
+      <code>{{ patient.patient_id }}</code> &nbsp;·&nbsp;
+      <span class="blood-badge">{{ patient.blood_group }}</span> &nbsp;·&nbsp;
+      Last visit: {{ patient.last_visit or 'N/A' }}
+    </p>
+  </div>
+  <div class="page-header-actions">
+    {% if session.role in ['admin','doctor'] %}
+    <a href="{{ url_for('edit_patient', pid=patient.id) }}" class="btn-primary-custom">
+      <i class="fa-solid fa-pen me-2"></i>Edit Record
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+{% if session.role == 'nurse' %}
+<div class="access-notice notice-warning mb-4">
+  <i class="fa-solid fa-eye-slash me-2"></i>
+  <strong>Access Restricted:</strong> Diagnosis, treatment plan, prescriptions and address are encrypted and not accessible to nurse role. This access attempt has been logged.
+</div>
+{% endif %}
+
+<div class="detail-grid">
+  <!-- Demographics -->
+  <div class="detail-card">
+    <div class="detail-card-header">
+      <i class="fa-solid fa-id-card me-2"></i>Demographics
+    </div>
+    <div class="detail-card-body">
+      <div class="detail-row">
+        <span class="detail-label">Full Name</span>
+        <span class="detail-value">{{ patient.name }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Patient ID</span>
+        <span class="detail-value"><code>{{ patient.patient_id }}</code></span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Age</span>
+        <span class="detail-value">{{ patient.age }} years</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Gender</span>
+        <span class="detail-value"><span class="gender-badge gender-{{ patient.gender|lower }}">{{ patient.gender }}</span></span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Blood Group</span>
+        <span class="detail-value"><span class="blood-badge">{{ patient.blood_group }}</span></span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Contact</span>
+        <span class="detail-value">{{ patient.contact or '—' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assignment -->
+  <div class="detail-card">
+    <div class="detail-card-header">
+      <i class="fa-solid fa-user-doctor me-2"></i>Care Team
+    </div>
+    <div class="detail-card-body">
+      <div class="detail-row">
+        <span class="detail-label">Assigned Doctor</span>
+        <span class="detail-value">
+          {% if patient.assigned_doctor %}
+          <span class="role-badge role-doctor">{{ patient.assigned_doctor }}</span>
+          {% else %}<span class="text-muted">Unassigned</span>{% endif %}
+        </span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Assigned Nurse</span>
+        <span class="detail-value">
+          {% if patient.assigned_nurse %}
+          <span class="role-badge role-nurse">{{ patient.assigned_nurse }}</span>
+          {% else %}<span class="text-muted">Unassigned</span>{% endif %}
+        </span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Last Visit</span>
+        <span class="detail-value">{{ patient.last_visit or '—' }}</span>
+      </div>
+
+      {% if session.role in ['nurse','admin'] %}
+      <form method="POST" action="{{ url_for('update_vitals', pid=patient.id) }}" class="mt-3">
+        <div class="form-group-custom">
+          <label class="form-label-custom">Update Last Visit Date</label>
+          <input type="date" name="last_visit" class="form-control-custom"
+                 value="{{ patient.last_visit or '' }}">
+        </div>
+        <button type="submit" class="btn-sm-custom btn-teal mt-2">
+          <i class="fa-solid fa-heart-pulse me-1"></i>Update Vitals
+        </button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Address -->
+  <div class="detail-card">
+    <div class="detail-card-header">
+      <i class="fa-solid fa-location-dot me-2"></i>Address
+      {% if session.role == 'nurse' %}<span class="encrypted-badge"><i class="fa-solid fa-lock me-1"></i>Encrypted</span>{% endif %}
+    </div>
+    <div class="detail-card-body">
+      {% if patient.address == '*** RESTRICTED ***' %}
+      <div class="restricted-field">
+        <i class="fa-solid fa-lock me-2"></i>AES-256 Encrypted – Access Restricted
+      </div>
+      {% else %}
+      <p class="detail-text">{{ patient.address or 'Not recorded' }}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Diagnosis -->
+  <div class="detail-card {% if patient.diagnosis != '*** RESTRICTED ***' %}detail-card-sensitive{% endif %}">
+    <div class="detail-card-header">
+      <i class="fa-solid fa-stethoscope me-2"></i>Diagnosis
+      {% if session.role == 'nurse' %}<span class="encrypted-badge"><i class="fa-solid fa-lock me-1"></i>Encrypted</span>{% endif %}
+      {% if session.role in ['admin','doctor'] %}<span class="encrypted-badge green"><i class="fa-solid fa-unlock me-1"></i>Decrypted</span>{% endif %}
+    </div>
+    <div class="detail-card-body">
+      {% if patient.diagnosis == '*** RESTRICTED ***' %}
+      <div class="restricted-field">
+        <i class="fa-solid fa-lock me-2"></i>AES-256 Encrypted – Role Insufficient
+      </div>
+      {% else %}
+      <p class="detail-text">{{ patient.diagnosis or 'No diagnosis recorded' }}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Treatment Plan -->
+  <div class="detail-card {% if patient.treatment != '*** RESTRICTED ***' %}detail-card-sensitive{% endif %}">
+    <div class="detail-card-header">
+      <i class="fa-solid fa-notes-medical me-2"></i>Treatment Plan
+      {% if session.role == 'nurse' %}<span class="encrypted-badge"><i class="fa-solid fa-lock me-1"></i>Encrypted</span>{% endif %}
+      {% if session.role in ['admin','doctor'] %}<span class="encrypted-badge green"><i class="fa-solid fa-unlock me-1"></i>Decrypted</span>{% endif %}
+    </div>
+    <div class="detail-card-body">
+      {% if patient.treatment == '*** RESTRICTED ***' %}
+      <div class="restricted-field">
+        <i class="fa-solid fa-lock me-2"></i>AES-256 Encrypted – Role Insufficient
+      </div>
+      {% else %}
+      <p class="detail-text">{{ patient.treatment or 'No treatment plan recorded' }}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Prescriptions -->
+  <div class="detail-card {% if patient.prescriptions != '*** RESTRICTED ***' %}detail-card-sensitive{% endif %}">
+    <div class="detail-card-header">
+      <i class="fa-solid fa-pills me-2"></i>Prescriptions
+      {% if session.role == 'nurse' %}<span class="encrypted-badge"><i class="fa-solid fa-lock me-1"></i>Encrypted</span>{% endif %}
+      {% if session.role in ['admin','doctor'] %}<span class="encrypted-badge green"><i class="fa-solid fa-unlock me-1"></i>Decrypted</span>{% endif %}
+    </div>
+    <div class="detail-card-body">
+      {% if patient.prescriptions == '*** RESTRICTED ***' %}
+      <div class="restricted-field">
+        <i class="fa-solid fa-lock me-2"></i>AES-256 Encrypted – Role Insufficient
+      </div>
+      {% else %}
+      <p class="detail-text">{{ patient.prescriptions or 'No prescriptions recorded' }}</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Encryption Info Banner -->
+<div class="encryption-info-banner">
+  <i class="fa-solid fa-shield-halved me-2"></i>
+  <strong>Data Protection Active:</strong> Sensitive fields are stored encrypted with AES-256 in the database.
+  {% if session.role in ['admin','doctor'] %}Decrypted in-memory for authorized access only.{% else %}Your role does not have decrypt permissions for sensitive fields.{% endif %}
+</div>
+{% endblock %}

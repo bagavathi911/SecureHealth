@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+{% block title %}Dashboard – SecureHealth{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+{% if session.role == 'admin' %}
+<!-- ─── Admin Dashboard ────────────────────────────────────────────────── -->
+<div class="page-header">
+  <div>
+    <h2 class="page-heading">Admin Dashboard</h2>
+    <p class="page-subheading">System overview &amp; security analytics</p>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('audit_logs') }}" class="btn-outline-custom"><i class="fa-solid fa-file-shield me-2"></i>View Audit Logs</a>
+    <a href="{{ url_for('new_user') }}" class="btn-primary-custom"><i class="fa-solid fa-user-plus me-2"></i>Add User</a>
+  </div>
+</div>
+
+<!-- Stat Cards -->
+<div class="stats-grid">
+  <div class="stat-card stat-blue">
+    <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+    <div class="stat-content">
+      <div class="stat-value">{{ stats.total_users }}</div>
+      <div class="stat-label">Total Users</div>
+    </div>
+    <div class="stat-trend up"><i class="fa-solid fa-arrow-trend-up"></i></div>
+  </div>
+  <div class="stat-card stat-teal">
+    <div class="stat-icon"><i class="fa-solid fa-user-injured"></i></div>
+    <div class="stat-content">
+      <div class="stat-value">{{ stats.total_patients }}</div>
+      <div class="stat-label">Total Patients</div>
+    </div>
+    <div class="stat-trend up"><i class="fa-solid fa-arrow-trend-up"></i></div>
+  </div>
+  <div class="stat-card stat-green">
+    <div class="stat-icon"><i class="fa-solid fa-circle-check"></i></div>
+    <div class="stat-content">
+      <div class="stat-value">{{ stats.login_success }}</div>
+      <div class="stat-label">Successful Logins</div>
+    </div>
+  </div>
+  <div class="stat-card stat-red">
+    <div class="stat-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+    <div class="stat-content">
+      <div class="stat-value">{{ stats.login_failed }}</div>
+      <div class="stat-label">Failed Login Attempts</div>
+    </div>
+    {% if stats.login_failed > 0 %}
+    <div class="stat-trend down"><i class="fa-solid fa-exclamation"></i></div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Charts Row -->
+<div class="charts-grid">
+  <div class="chart-card">
+    <div class="chart-card-header">
+      <h3 class="chart-title"><i class="fa-solid fa-chart-line me-2"></i>Login Activity (14 days)</h3>
+    </div>
+    <div class="chart-body">
+      <canvas id="loginChart" height="220"></canvas>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-card-header">
+      <h3 class="chart-title"><i class="fa-solid fa-chart-pie me-2"></i>Actions Distribution</h3>
+    </div>
+    <div class="chart-body">
+      <canvas id="actionsChart" height="220"></canvas>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-card-header">
+      <h3 class="chart-title"><i class="fa-solid fa-chart-donut me-2"></i>Users by Role</h3>
+    </div>
+    <div class="chart-body">
+      <canvas id="rolesChart" height="220"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Activities -->
+<div class="content-card">
+  <div class="content-card-header">
+    <h3 class="content-card-title"><i class="fa-solid fa-clock-rotate-left me-2"></i>Recent Activities</h3>
+    <a href="{{ url_for('audit_logs') }}" class="link-custom">View all <i class="fa-solid fa-arrow-right ms-1"></i></a>
+  </div>
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>User</th><th>Role</th><th>Action</th><th>Resource</th><th>IP</th><th>Status</th><th>Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in stats.recent_activities %}
+        <tr>
+          <td><span class="fw-500">{{ log.username }}</span></td>
+          <td><span class="role-badge role-{{ log.role }}">{{ log.role }}</span></td>
+          <td><code class="action-code">{{ log.action }}</code></td>
+          <td class="text-muted">{{ log.resource }}</td>
+          <td class="text-muted font-mono">{{ log.ip_address }}</td>
+          <td>
+            <span class="status-badge status-{{ log.status|lower }}">
+              {% if log.status == 'SUCCESS' %}<i class="fa-solid fa-check me-1"></i>{% elif log.status == 'FAILED' %}<i class="fa-solid fa-xmark me-1"></i>{% else %}<i class="fa-solid fa-ban me-1"></i>{% endif %}
+              {{ log.status }}
+            </span>
+          </td>
+          <td class="text-muted">{{ log.timestamp[:16] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% elif session.role == 'doctor' %}
+<!-- ─── Doctor Dashboard ───────────────────────────────────────────────── -->
+<div class="page-header">
+  <div>
+    <h2 class="page-heading">Doctor Dashboard</h2>
+    <p class="page-subheading">Your patients and recent records</p>
+  </div>
+  <a href="{{ url_for('new_patient') }}" class="btn-primary-custom"><i class="fa-solid fa-user-plus me-2"></i>New Patient</a>
+</div>
+
+<div class="stats-grid stats-grid-2">
+  <div class="stat-card stat-blue">
+    <div class="stat-icon"><i class="fa-solid fa-user-injured"></i></div>
+    <div class="stat-content">
+      <div class="stat-value">{{ stats.my_patients }}</div>
+      <div class="stat-label">Assigned Patients</div>
+    </div>
+  </div>
+  <div class="stat-card stat-teal">
+    <div class="stat-icon"><i class="fa-solid fa-calendar-check"></i></div>
+    <div class="stat-content">
+      <div class="stat-value">{{ stats.recent_patients|length }}</div>
+      <div class="stat-label">Recent Visits</div>
+    </div>
+  </div>
+</div>
+
+<div class="content-card">
+  <div class="content-card-header">
+    <h3 class="content-card-title"><i class="fa-solid fa-user-injured me-2"></i>Recent Patients</h3>
+    <a href="{{ url_for('patients') }}" class="link-custom">View all <i class="fa-solid fa-arrow-right ms-1"></i></a>
+  </div>
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead><tr><th>Patient ID</th><th>Name</th><th>Age</th><th>Gender</th><th>Blood Group</th><th>Last Visit</th><th>Action</th></tr></thead>
+      <tbody>
+        {% for p in stats.recent_patients %}
+        <tr>
+          <td><code>{{ p.patient_id }}</code></td>
+          <td>{{ p.encrypted_name }}</td>
+          <td>{{ p.age }}</td>
+          <td>{{ p.gender }}</td>
+          <td><span class="blood-badge">{{ p.blood_group }}</span></td>
+          <td>{{ p.last_visit }}</td>
+          <td><a href="{{ url_for('view_patient', pid=p['id']) }}" class="btn-sm-custom">View</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% elif session.role == 'nurse' %}
+<!-- ─── Nurse Dashboard ────────────────────────────────────────────────── -->
+<div class="page-header">
+  <div>
+    <h2 class="page-heading">Nurse Dashboard</h2>
+    <p class="page-subheading">Your assigned patients and vitals</p>
+  </div>
+</div>
+
+<div class="stats-grid stats-grid-2">
+  <div class="stat-card stat-teal">
+    <div class="stat-icon"><i class="fa-solid fa-user-nurse"></i></div>
+    <div class="stat-content">
+      <div class="stat-value">{{ stats.my_patients }}</div>
+      <div class="stat-label">Assigned Patients</div>
+    </div>
+  </div>
+  <div class="stat-card stat-green">
+    <div class="stat-icon"><i class="fa-solid fa-heart-pulse"></i></div>
+    <div class="stat-content">
+      <div class="stat-value">{{ stats.recent_vitals|length }}</div>
+      <div class="stat-label">Recent Updates</div>
+    </div>
+  </div>
+</div>
+
+<div class="content-card">
+  <div class="content-card-header">
+    <h3 class="content-card-title"><i class="fa-solid fa-heart-pulse me-2"></i>Assigned Patients</h3>
+    <a href="{{ url_for('patients') }}" class="link-custom">View all <i class="fa-solid fa-arrow-right ms-1"></i></a>
+  </div>
+  <div class="access-notice notice-warning">
+    <i class="fa-solid fa-eye-slash me-2"></i>
+    <strong>Limited Access:</strong> Sensitive fields (Diagnosis, Treatment, Prescriptions, Address) are restricted for nurse role.
+  </div>
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead><tr><th>Patient ID</th><th>Name</th><th>Age</th><th>Gender</th><th>Blood Group</th><th>Last Visit</th><th>Action</th></tr></thead>
+      <tbody>
+        {% for p in stats.recent_vitals %}
+        <tr>
+          <td><code>{{ p.patient_id }}</code></td>
+          <td>{{ p.encrypted_name }}</td>
+          <td>{{ p.age }}</td>
+          <td>{{ p.gender }}</td>
+          <td><span class="blood-badge">{{ p.blood_group }}</span></td>
+          <td>{{ p.last_visit }}</td>
+          <td><a href="{{ url_for('view_patient', pid=p['id']) }}" class="btn-sm-custom">View</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+{% if session.role == 'admin' %}
+<script>
+async function loadCharts() {
+  // ── Login Chart ──
+  const loginRes = await fetch('/api/stats/logins');
+  const loginData = await loginRes.json();
+  new Chart(document.getElementById('loginChart'), {
+    type: 'line',
+    data: {
+      labels: loginData.map(d => d.day),
+      datasets: [
+        { label: 'Successful', data: loginData.map(d => d.success), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.4, pointRadius: 4 },
+        { label: 'Failed', data: loginData.map(d => d.failed), borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)', fill: true, tension: 0.4, pointRadius: 4 }
+      ]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+  });
+
+  // ── Actions Chart ──
+  const actRes = await fetch('/api/stats/actions');
+  const actData = await actRes.json();
+  const colors = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16'];
+  new Chart(document.getElementById('actionsChart'), {
+    type: 'bar',
+    data: {
+      labels: actData.map(d => d.action),
+      datasets: [{ label: 'Count', data: actData.map(d => d.count), backgroundColor: colors, borderRadius: 6 }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } }, indexAxis: 'y' }
+  });
+
+  // ── Roles Chart ──
+  const rolesRes = await fetch('/api/stats/roles');
+  const rolesData = await rolesRes.json();
+  new Chart(document.getElementById('rolesChart'), {
+    type: 'doughnut',
+    data: {
+      labels: rolesData.map(d => d.role.charAt(0).toUpperCase() + d.role.slice(1)),
+      datasets: [{ data: rolesData.map(d => d.count), backgroundColor: ['#3b82f6','#10b981','#f59e0b'], borderWidth: 0, hoverOffset: 8 }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } }, cutout: '65%' }
+  });
+}
+loadCharts();
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Audit Logs – SecureHealth{% endblock %}
+{% block page_title %}Audit Logs{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2 class="page-heading">Audit Logs</h2>
+    <p class="page-subheading">{{ total }} total log entries – Complete access and action history</p>
+  </div>
+  <a href="{{ url_for('export_audit') }}" class="btn-outline-custom">
+    <i class="fa-solid fa-file-csv me-2"></i>Export CSV
+  </a>
+</div>
+
+<!-- Filters -->
+<div class="filter-bar">
+  <form method="GET" action="{{ url_for('audit_logs') }}" class="filter-form">
+    <div class="filter-group">
+      <label class="filter-label">Action Type</label>
+      <select name="action" class="form-control-custom form-control-sm">
+        <option value="">All Actions</option>
+        {% for a in actions %}
+        <option value="{{ a.action }}" {{ 'selected' if action_filter == a.action }}>{{ a.action }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-group">
+      <label class="filter-label">Status</label>
+      <select name="status" class="form-control-custom form-control-sm">
+        <option value="">All Statuses</option>
+        <option value="SUCCESS" {{ 'selected' if status_filter == 'SUCCESS' }}>SUCCESS</option>
+        <option value="FAILED" {{ 'selected' if status_filter == 'FAILED' }}>FAILED</option>
+        <option value="DENIED" {{ 'selected' if status_filter == 'DENIED' }}>DENIED</option>
+      </select>
+    </div>
+    <button type="submit" class="btn-sm-custom">Filter</button>
+    {% if action_filter or status_filter %}
+    <a href="{{ url_for('audit_logs') }}" class="btn-outline-sm">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+<div class="content-card">
+  <div class="table-responsive">
+    <table class="data-table audit-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Username</th>
+          <th>Role</th>
+          <th>Action</th>
+          <th>Resource</th>
+          <th>IP Address</th>
+          <th>Status</th>
+          <th>Timestamp</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr class="{% if log.status == 'DENIED' %}row-denied{% elif log.status == 'FAILED' %}row-failed{% endif %}">
+          <td class="text-muted">{{ log.id }}</td>
+          <td><span class="fw-500">{{ log.username }}</span></td>
+          <td>
+            {% if log.role not in ['admin','doctor','nurse'] %}
+            <span class="role-badge role-unknown">{{ log.role }}</span>
+            {% else %}
+            <span class="role-badge role-{{ log.role }}">{{ log.role }}</span>
+            {% endif %}
+          </td>
+          <td><code class="action-code action-{{ log.action.lower().replace('_', '-') }}">{{ log.action }}</code></td>
+          <td class="text-muted">{{ log.resource }}</td>
+          <td class="font-mono text-muted">{{ log.ip_address }}</td>
+          <td>
+            <span class="status-badge status-{{ log.status|lower }}">
+              {% if log.status == 'SUCCESS' %}<i class="fa-solid fa-check me-1"></i>
+              {% elif log.status == 'FAILED' %}<i class="fa-solid fa-xmark me-1"></i>
+              {% elif log.status == 'DENIED' %}<i class="fa-solid fa-ban me-1"></i>
+              {% endif %}{{ log.status }}
+            </span>
+          </td>
+          <td class="text-muted">{{ log.timestamp[:19] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if total_pages > 1 %}
+  <div class="pagination-wrapper">
+    <nav>
+      <ul class="pagination-custom">
+        {% if page > 1 %}
+        <li><a href="?page={{ page-1 }}&action={{ action_filter }}&status={{ status_filter }}" class="page-btn"><i class="fa-solid fa-chevron-left"></i></a></li>
+        {% endif %}
+        {% for p in range(1, total_pages+1) %}
+        {% if p == page or (p <= 3 and page <= 3) or (p >= total_pages-2 and page >= total_pages-2) or (p >= page-1 and p <= page+1) %}
+        <li><a href="?page={{ p }}&action={{ action_filter }}&status={{ status_filter }}" class="page-btn {% if p == page %}active{% endif %}">{{ p }}</a></li>
+        {% elif p == 4 and page > 4 or p == total_pages-3 and page < total_pages-3 %}
+        <li><span class="page-ellipsis">…</span></li>
+        {% endif %}
+        {% endfor %}
+        {% if page < total_pages %}
+        <li><a href="?page={{ page+1 }}&action={{ action_filter }}&status={{ status_filter }}" class="page-btn"><i class="fa-solid fa-chevron-right"></i></a></li>
+        {% endif %}
+      </ul>
+    </nav>
+    <p class="pagination-info">Page {{ page }} of {{ total_pages }} ({{ total }} entries)</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

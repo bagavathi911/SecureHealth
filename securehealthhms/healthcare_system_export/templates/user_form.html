@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}New User – SecureHealth{% endblock %}
+{% block page_title %}Add User{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <a href="{{ url_for('users') }}" class="back-link"><i class="fa-solid fa-arrow-left me-2"></i>Back to Users</a>
+    <h2 class="page-heading mt-1">Create New User</h2>
+    <p class="page-subheading">Passwords are hashed with bcrypt (cost factor 12) before storage</p>
+  </div>
+</div>
+
+<div class="encryption-info-banner mb-4">
+  <i class="fa-solid fa-key me-2"></i>
+  <strong>Security:</strong> Password will be hashed using bcrypt with 12 rounds. Plain-text passwords are never stored.
+</div>
+
+<div class="form-card-single">
+  <form method="POST" action="{{ url_for('new_user') }}" novalidate>
+    <div class="form-group-custom">
+      <label class="form-label-custom">Username <span class="required">*</span></label>
+      <div class="input-icon-wrapper">
+        <i class="fa-solid fa-user input-icon"></i>
+        <input type="text" name="username" class="form-control-custom" required
+               placeholder="e.g. dr.kumar" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="form-group-custom">
+      <label class="form-label-custom">Role <span class="required">*</span></label>
+      <select name="role" class="form-control-custom" required>
+        <option value="">Select role</option>
+        <option value="admin">Admin – Full system access</option>
+        <option value="doctor">Doctor – Patient records + diagnosis</option>
+        <option value="nurse">Nurse – Limited vitals access</option>
+      </select>
+    </div>
+
+    <div class="form-group-custom">
+      <label class="form-label-custom">Password <span class="required">*</span></label>
+      <div class="input-icon-wrapper">
+        <i class="fa-solid fa-lock input-icon"></i>
+        <input type="password" name="password" id="newPassword" class="form-control-custom" required
+               placeholder="Minimum 8 characters" autocomplete="new-password"
+               oninput="checkStrength(this.value)">
+        <button type="button" class="password-toggle" onclick="toggleNewPassword()">
+          <i class="fa-solid fa-eye" id="newEyeIcon"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="password-requirements">
+      <div class="req-title">Password Requirements:</div>
+      <div class="req-list">
+        <div class="req-item" id="req-length"><i class="fa-solid fa-circle me-2"></i>At least 8 characters</div>
+        <div class="req-item" id="req-upper"><i class="fa-solid fa-circle me-2"></i>One uppercase letter</div>
+        <div class="req-item" id="req-lower"><i class="fa-solid fa-circle me-2"></i>One lowercase letter</div>
+        <div class="req-item" id="req-digit"><i class="fa-solid fa-circle me-2"></i>One number</div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <a href="{{ url_for('users') }}" class="btn-outline-custom">Cancel</a>
+      <button type="submit" class="btn-primary-custom">
+        <i class="fa-solid fa-user-plus me-2"></i>Create User
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+function checkStrength(val) {
+  const setReq = (id, ok) => {
+    const el = document.getElementById(id);
+    el.classList.toggle('req-ok', ok);
+    el.querySelector('i').className = ok ? 'fa-solid fa-circle-check me-2' : 'fa-solid fa-circle me-2';
+  };
+  setReq('req-length', val.length >= 8);
+  setReq('req-upper', /[A-Z]/.test(val));
+  setReq('req-lower', /[a-z]/.test(val));
+  setReq('req-digit', /[0-9]/.test(val));
+}
+function toggleNewPassword() {
+  const f = document.getElementById('newPassword');
+  const i = document.getElementById('newEyeIcon');
+  if (f.type === 'password') { f.type = 'text'; i.className = 'fa-solid fa-eye-slash'; }
+  else { f.type = 'password'; i.className = 'fa-solid fa-eye'; }
+}
+</script>
+{% endblock %}

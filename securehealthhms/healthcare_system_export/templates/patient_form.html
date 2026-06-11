@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}{% if mode == 'edit' %}Edit Patient{% else %}New Patient{% endif %} – SecureHealth{% endblock %}
+{% block page_title %}{% if mode == 'edit' %}Edit Patient{% else %}New Patient{% endif %}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <a href="{{ url_for('patients') }}" class="back-link"><i class="fa-solid fa-arrow-left me-2"></i>Back to Patients</a>
+    <h2 class="page-heading mt-1">{% if mode == 'edit' %}Edit Patient Record{% else %}Register New Patient{% endif %}</h2>
+    <p class="page-subheading">{% if mode == 'edit' %}Update diagnosis, treatment and prescriptions{% else %}All sensitive fields will be AES-256 encrypted before storage{% endif %}</p>
+  </div>
+</div>
+
+<div class="encryption-info-banner mb-4">
+  <i class="fa-solid fa-lock me-2"></i>
+  <strong>Encryption Notice:</strong> Fields marked with <i class="fa-solid fa-shield-halved text-warning mx-1"></i> will be encrypted with AES-256 before being saved to the database.
+</div>
+
+<form method="POST" class="patient-form" novalidate>
+  <div class="form-grid">
+    <!-- Personal Info -->
+    <div class="form-section">
+      <div class="form-section-header">
+        <i class="fa-solid fa-id-card me-2"></i>Personal Information
+      </div>
+
+      {% if mode != 'edit' %}
+      <div class="form-row-2">
+        <div class="form-group-custom">
+          <label class="form-label-custom">Full Name <span class="required">*</span> <i class="fa-solid fa-shield-halved enc-icon" title="Will be encrypted"></i></label>
+          <input type="text" name="name" class="form-control-custom"
+                 value="{{ patient.name if patient else '' }}" required placeholder="e.g. Priya Sharma">
+        </div>
+        <div class="form-group-custom">
+          <label class="form-label-custom">Age <span class="required">*</span></label>
+          <input type="number" name="age" class="form-control-custom" min="0" max="150"
+                 value="{{ patient.age if patient else '' }}" required placeholder="e.g. 35">
+        </div>
+      </div>
+      {% endif %}
+
+      {% if mode != 'edit' %}
+      <div class="form-row-2">
+        <div class="form-group-custom">
+          <label class="form-label-custom">Gender <span class="required">*</span></label>
+          <select name="gender" class="form-control-custom" required>
+            <option value="">Select gender</option>
+            <option value="Male" {{ 'selected' if patient and patient.gender == 'Male' }}>Male</option>
+            <option value="Female" {{ 'selected' if patient and patient.gender == 'Female' }}>Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group-custom">
+          <label class="form-label-custom">Blood Group <span class="required">*</span></label>
+          <select name="blood_group" class="form-control-custom" required>
+            <option value="">Select blood group</option>
+            {% for bg in ['A+','A-','B+','B-','AB+','AB-','O+','O-'] %}
+            <option value="{{ bg }}" {{ 'selected' if patient and patient.blood_group == bg }}>{{ bg }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group-custom">
+        <label class="form-label-custom">Contact Number</label>
+        <input type="tel" name="contact" class="form-control-custom"
+               value="{{ patient.contact if patient else '' }}" placeholder="e.g. 9876543210">
+      </div>
+
+      <div class="form-group-custom">
+        <label class="form-label-custom">Address <i class="fa-solid fa-shield-halved enc-icon" title="Will be encrypted"></i></label>
+        <textarea name="address" class="form-control-custom" rows="2"
+                  placeholder="Street, City, State">{{ patient.address if patient else '' }}</textarea>
+      </div>
+      {% endif %}
+
+      <div class="form-row-2">
+        <div class="form-group-custom">
+          <label class="form-label-custom">Last Visit Date</label>
+          <input type="date" name="last_visit" class="form-control-custom"
+                 value="{{ patient.last_visit if patient else '' }}">
+        </div>
+        {% if mode != 'edit' %}
+        <div class="form-group-custom">
+          <label class="form-label-custom">Assigned Doctor</label>
+          <select name="assigned_doctor" class="form-control-custom">
+            {% for d in doctors %}
+            <option value="{{ d.username }}" {{ 'selected' if session.role == 'doctor' and d.username == session.username }}>{{ d.username }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+      </div>
+
+      {% if mode != 'edit' %}
+      <div class="form-group-custom">
+        <label class="form-label-custom">Assigned Nurse</label>
+        <select name="assigned_nurse" class="form-control-custom">
+          <option value="">— None —</option>
+          {% for n in nurses %}
+          <option value="{{ n.username }}">{{ n.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Medical Info -->
+    <div class="form-section">
+      <div class="form-section-header">
+        <i class="fa-solid fa-stethoscope me-2"></i>Medical Information
+        <span class="enc-notice"><i class="fa-solid fa-shield-halved me-1"></i>All fields below will be AES-256 encrypted</span>
+      </div>
+
+      <div class="form-group-custom">
+        <label class="form-label-custom">
+          Diagnosis <i class="fa-solid fa-shield-halved enc-icon" title="Will be encrypted"></i>
+        </label>
+        <textarea name="diagnosis" class="form-control-custom" rows="4"
+                  placeholder="Primary diagnosis and clinical notes...">{{ patient.diagnosis if patient else '' }}</textarea>
+      </div>
+
+      <div class="form-group-custom">
+        <label class="form-label-custom">
+          Treatment Plan <i class="fa-solid fa-shield-halved enc-icon" title="Will be encrypted"></i>
+        </label>
+        <textarea name="treatment" class="form-control-custom" rows="4"
+                  placeholder="Treatment plan, interventions, follow-up schedule...">{{ patient.treatment if patient else '' }}</textarea>
+      </div>
+
+      <div class="form-group-custom">
+        <label class="form-label-custom">
+          Prescriptions <i class="fa-solid fa-shield-halved enc-icon" title="Will be encrypted"></i>
+        </label>
+        <textarea name="prescriptions" class="form-control-custom" rows="4"
+                  placeholder="Medications, dosages, instructions...">{{ patient.prescriptions if patient else '' }}</textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <a href="{{ url_for('patients') }}" class="btn-outline-custom">Cancel</a>
+    <button type="submit" class="btn-primary-custom">
+      <i class="fa-solid fa-{% if mode == 'edit' %}floppy-disk{% else %}user-plus{% endif %} me-2"></i>
+      {% if mode == 'edit' %}Save Changes{% else %}Register Patient{% endif %}
+    </button>
+  </div>
+</form>
+{% endblock %}
